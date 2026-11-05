@@ -1,0 +1,19 @@
+name: Browser smoke tests
+on:
+  push:
+    branches: [feature/production-studio-mvp, main]
+  pull_request:
+jobs:
+  browser-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save @playwright/test@1.58.2
+      - run: npx playwright install --with-deps chromium
+      - name: Start local web server
+        run: python3 -m http.server 4173 --bind 127.0.0.1 &
+      - name: Run browser tests
+        run: npx playwright test tests/studio.spec.cjs --project=chromium

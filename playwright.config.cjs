@@ -1,0 +1,1 @@
+module.exports={testDir:'./tests',use:{viewport:{width:390,height:844},browserName:'chromium'},reporter:'list'};

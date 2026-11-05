@@ -1,0 +1,50 @@
+const { test, expect } = require('@playwright/test');
+test.beforeEach(async ({page})=>{await page.goto('http://127.0.0.1:4173');await page.evaluate(()=>localStorage.clear());await page.reload()});
+test('เปิดงานและจัดการฉาก',async ({page})=>{
+ await expect(page.getByText('โปรเจกต์ของฉัน')).toBeVisible();
+ await page.locator('[data-open-project]').first().click();
+ await expect(page.getByRole('heading',{name:'จัดการฉาก'})).toBeVisible();
+ await page.locator('#newScene [name=title]').fill('ฉากทดลอง');
+ await page.locator('#newScene [name=location]').fill('บ้านอีสาน');
+ await page.locator('#newScene button').click();
+ await expect(page.getByText('ฉากทดลอง')).toBeVisible();
+ await page.reload();
+ await page.locator('[data-open-project]').first().click();
+ await expect(page.getByText('ฉากทดลอง')).toBeVisible();
+});
+test('บทพูด ล็อก และสร้าง FLOW prompt',async ({page})=>{
+ await page.locator('[data-open-project]').first().click();
+ await page.locator('#newScene [name=title]').fill('ฉากทดลอง');
+ await page.locator('#newScene button').click();
+ await page.locator('[data-select-scene]').first().click();
+ await page.locator('#newDialogue [name=speaker]').fill('บักดำ');
+ await page.locator('#newDialogue [name=text]').fill('เว้าอีสานเด้อ');
+ await page.locator('#newDialogue button').click();
+ await page.locator('[data-edit-dialogue]').click();
+ await page.locator('#dialogueEditText').fill('เว้าอีสานเด้อ');
+ await page.locator('#saveDialogueEdit').click();
+ await page.locator('[data-lock]').click();
+ await expect(page.getByText('🔒 LOCKED')).toBeVisible();
+ await expect(page.locator('[data-edit-dialogue]')).toHaveCount(0);
+ await page.locator('[data-tab=prompt]').click();
+ await page.locator('#generate').click();
+ await expect(page.locator('#output')).toContainText('เว้าอีสานเด้อ');
+});
+test('สำรองข้อมูล JSON',async ({page})=>{
+ await page.locator('[data-tab=backup]').click();
+ const promise=page.waitForEvent('download');
+ await page.locator('#export').click();
+ const download=await promise;
+ expect(download.suggestedFilename()).toBe('isan-film-studio-backup.json');
+});
+test('ป้องกันแก้ไขฉากเป็นระยะเวลาที่ไม่อนุญาต',async ({page})=>{
+ await page.locator('[data-open-project]').first().click();
+ await page.locator('#newScene [name=title]').fill('ฉากทดลอง');
+ await page.locator('#newScene button').click();
+ await page.locator('[data-edit-scene]').click();
+ await page.locator('#editScene [name=duration]').fill('7');
+ page.once('dialog',d=>d.accept());
+ await page.locator('#editScene button').click();
+ await expect(page.locator('[data-edit-scene]')).toBeVisible();
+ await expect(page.getByText('8 วินาที')).toBeVisible();
+});
